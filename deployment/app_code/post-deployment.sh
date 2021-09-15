@@ -33,7 +33,7 @@ tar -xzf kafka_2.12-2.2.1.tgz
 echo "Setup AWS environment ..."
 export AWS_REGION=$(curl -s 169.254.169.254/latest/dynamic/instance-identity/document | jq -r '.region')
 export S3BUCKET=$(aws cloudformation describe-stacks --stack-name StreamOnEKS --query "Stacks[0].Outputs[?OutputKey=='CODEBUCKET'].OutputValue" --output text)
-export MSK_SERVER=$(aws cloudformation describe-stacks --stack-name StreamOnEKS --query "Stacks[0].Outputs[?OutputKey=='MSKBootstrap'].OutputValue" --output text)
+export MSK_SERVER=$(aws cloudformation describe-stacks --stack-name StreamOnEKS --query "Stacks[0].Outputs[?OutputKey=='MSK_BROKER'].OutputValue" --output text)
 
 echo "export AWS_REGION=${AWS_REGION}" | tee -a ~/.bash_profile
 echo "export S3BUCKET=${S3BUCKET}" | tee -a ~/.bash_profile

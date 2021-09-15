@@ -13,37 +13,78 @@
 
 from aws_cdk import (
     core, 
-    aws_msk as msk,
     aws_cloud9 as cloud9,
-    aws_ec2 as ec2
+    aws_ec2 as ec2,
+    aws_msk as msk
 )
 
 class MSKStack(core.NestedStack):
 
-    def __init__(self, scope: core.Construct, id: str, eksvpc: ec2.IVpc, eks_connect: ec2.Connections, emr_connect: ec2.Connections, **kwargs) -> None:
+    def __init__(self, scope: core.Construct, id: str, eksvpc: ec2.IVpc, cluster_name:str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         # launch Cloud9 as Kafka client
-        c9env = cloud9.Ec2Environment(self, "KafkaClientEnv", 
+        self._c9env = cloud9.Ec2Environment(self, "KafkaClientEnv", 
             vpc=eksvpc,
-            ec2_environment_name="MSK_Client",
+            ec2_environment_name= cluster_name+"_client",
             instance_type=ec2.InstanceType('m5.large'),
             subnet_selection=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PUBLIC),
         )
 
-        msk = msk.Cluster(self, "EMR-EKS-stream",
+        # # enable both TLS & Plain text
+        # transit_encryption = CfnCluster.EncryptionInTransitProperty(
+        #         client_broker="TLS_PLAINTEXT",
+        #         in_cluster=True
+        #     ) 
+        # MSK Cluster Security Group
+        sg_msk = ec2.SecurityGroup(self, "msk_sg",
+            vpc=eksvpc, allow_all_outbound=True, security_group_name="msk_sg"
+        )    
+        for subnet in eksvpc.public_subnets:
+            sg_msk.add_ingress_rule(ec2.Peer.ipv4(subnet.ipv4_cidr_block), ec2.Port.tcp(2181), "Zookeeper Plaintext")
+            sg_msk.add_ingress_rule(ec2.Peer.ipv4(subnet.ipv4_cidr_block), ec2.Port.tcp(2182), "Zookeeper TLS")
+            sg_msk.add_ingress_rule(ec2.Peer.ipv4(subnet.ipv4_cidr_block), ec2.Port.tcp(9092), "Broker Plaintext")
+            sg_msk.add_ingress_rule(ec2.Peer.ipv4(subnet.ipv4_cidr_block), ec2.Port.tcp(9094), "Zookeeper Plaintext")
+        for subnet in eksvpc.private_subnets:
+            sg_msk.add_ingress_rule(ec2.Peer.ipv4(subnet.ipv4_cidr_block), ec2.Port.all_traffic(), "All private traffic")
+        # # create broker node
+        # bngi = CfnCluster.broker_node_group_info=CfnCluster.BrokerNodeGroupInfoProperty(
+        #         client_subnets=eksvpc.select_subnets(subnet_type=ec2.SubnetType.PUBLIC).subnet_ids,
+        #         security_groups=[sg_msk.security_group_id],
+        #         instance_type="kafka.m5.large",
+        #         storage_info= CfnCluster.StorageInfoProperty(
+        #             ebs_storage_info=CfnCluster.EBSStorageInfoProperty(volume_size=100)),
+        # )
+        # create MSK cluster
+        # self._msk_cluster = CfnCluster(self, "EMR-EKS-stream",
+        #     cluster_name="EMR-EKS-demo",
+        #     kafka_version="2.6.1",
+        #     broker_node_group_info=bngi,
+        #     number_of_broker_nodes=2,
+        #     encryption_info=CfnCluster.EncryptionInfoProperty(encryption_in_transit=transit_encryption),
+        #     tags =core.CfnTag(key="project", value="emr-stream-demo")
+        # )
+        self._msk_cluster = msk.Cluster(self, "EMR-EKS-stream",
+            cluster_name=cluster_name,
             kafka_version=msk.KafkaVersion.V2_6_1,
             vpc=eksvpc,
+            ebs_storage_info=msk.EbsStorageInfo(volume_size=100),
+            encryption_in_transit=msk.EncryptionInTransitConfig(
+                enable_in_cluster=True,
+                client_broker=msk.ClientBrokerEncryption.TLS_PLAINTEXT
+            ),
+            instance_type=ec2.InstanceType.of(ec2.InstanceClass.BURSTABLE3, ec2.InstanceSize.SMALL),
             number_of_broker_nodes=2,
             removal_policy=core.RemovalPolicy.DESTROY,
-            ebs_storage_info= msk.EbsStorageInfo.volume_size(50),
-
+            security_groups=[sg_msk],
+            vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PUBLIC,one_per_az=True)
         )
 
-    msk.connections.allow_from(c9env.connections ,ec2.Port.all_tcp)
-    msk.connections.allow_from(eks_connect, ec2.Port.all_tcp)
-    msk.connections.allow_from(emr_connect, ec2.Port.all_tcp)
 
-    core.CfnOutput(self, "Kafka_client_URL", value=c9env.ide_url)
-    core.CfnOutput(self, "MSKBootstrap", value=msk.bootstrap_brokers)
-    core.CfnOutput(self, "ZookeeperConnection", value=msk.zookeeper_connection_string)
+        # self._msk_cluster.connections.allow_from(self._c9env.connections ,ec2.Port.all_tcp)
+        # self._msk_cluster.connections.allow_from(eks_connect, ec2.Port.all_tcp)
+        # self._msk_cluster.connections.allow_from(emr_master_sg, ec2.Port.all_tcp)
+        # self._msk_cluster.connections.allow_from(emr_slave_sg,ec2.Port.all_tcp)
+
+        core.CfnOutput(self, "Kafka_client_URL", value=self._c9env.ide_url)
+        core.CfnOutput(self, "MSK_BROKER", value=self._msk_cluster.bootstrap_brokers)

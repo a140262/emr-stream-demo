@@ -13,18 +13,17 @@
 
 #!/usr/bin/env python3
 from aws_cdk.core import (App,Tags,CfnOutput)
-from lib.spark_on_eks_stack import SparkOnEksStack
 from lib.emr_on_ec2_stack import EMREC2Stack
 from lib.msk_stack import MSKStack
+from lib.spark_on_eks_stack import SparkOnEksStack
 
 app = App()
+cluster_name = app.node.try_get_context('cluster_name')
 
-eks_name = app.node.try_get_context('cluster_name')
-
-# main stack
-eks_stack = SparkOnEksStack(app, 'emr-on-eks', eks_name)
-emr_ec2_stack = EMREC2Stack(eks_stack, 'emr-on-ec2', eks_stack.eksvpc, eks_stack.code_bucket)
-msk_stack = MSKStack(eks_stack,'kafka',eks_stack.eksvpc, eks_stack.eks_connection,emr_ec2_stack.emr_connection)
+# main stacks
+eks_stack = SparkOnEksStack(app, 'emr-on-eks', cluster_name)
+emr_ec2_stack = EMREC2Stack(eks_stack, 'emr-on-ec2', eks_stack.eksvpc, eks_stack.code_bucket,cluster_name)
+msk_stack = MSKStack(eks_stack,'kafka',eks_stack.eksvpc,cluster_name)
 
 Tags.of(eks_stack).add('project', 'emr-on-eks')
 Tags.of(emr_ec2_stack).add('project', 'emr-on-eks')

@@ -32,16 +32,16 @@ class SparkOnEksStack(core.Stack):
     def eksvpc(self):
         return self.network_sg.vpc
 
-    @property
-    def eks_connection(self):
-        return self._eks_connection
+    # @property
+    # def eks_connection(self):
+    #     return self._eks_connection
         
     def __init__(self, scope: core.Construct, id: str, eksname: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         source_dir=os.path.split(os.environ['VIRTUAL_ENV'])[0]+'/source'
 
-        # 1. a new bucket to store app code and logs
+        # 1. a new bucket to store application code
         self.app_s3 = S3AppCodeConst(self,'appcode')
 
         # 2. EKS base infrastructure
@@ -57,4 +57,4 @@ class SparkOnEksStack(core.Stack):
         # 4. Spark app access control
         SparkOnEksSAConst(self,'spark_permission',eks_cluster.my_cluster, self.app_s3.code_bucket,eks_cluster.oidc_issuer)
 
-        self._eks_connection=eks_cluster.my_cluster.connections
+        # self._eks_connection=eks_cluster.my_cluster.connections

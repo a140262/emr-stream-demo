@@ -11,19 +11,10 @@ It include sample data, stream producer simulator and a consumer example that ca
   * [CDK Deployment](#CDK-Deployment)
   * [Troubleshooting](#Troubleshooting)
 * [Post Deployment](#Post-Deployment)
-  * [Setup Kafka client](#Setup-kafka-client)
-  * [Submit & Orchestrate Job](#Submit--orchestrate-job)
-    * [Submit on Argo UI](#Submit-a-job-on-argo-ui)
-    * [Submit by Argo CLI](#Submit-a-job-by-argo-cli)
-    * [Submit a Native Spark Job](#Submit-a-native-job-with-spark-operator)
-      * [Execute a PySpark Job](#Execute-a-pyspark-job)
-      * [Self-recovery Test](#Self-recovery-test)
-      * [Cost Savings with Spot](#Check-Spot-instance-usage-and-cost-savings)
-      * [Autoscaling & Dynamic Resource Allocation](#Autoscaling---dynamic-resource-allocation)
+* [Submit job with EMR on EKS](#Submit-job-with-EMR-on-EKS)
+* [OPTIONAL:Submit step to EMR](#OPTIONAL-Submit-emr-job)
 * [Useful commands](#Useful-commands)  
 * [Clean Up](#clean-up)
-* [Security](#Security)
-* [License](#License)
 
 ## Deploy Infrastructure
 
@@ -122,6 +113,12 @@ kafka_2.12-2.2.1/bin/kafka-console-consumer.sh --bootstrap-server ${MSK_SERVER} 
 ```bash
 kafka_2.12-2.2.1/bin/kafka-console-consumer.sh --bootstrap-server ${MSK_SERVER} --topic taxirides_output --from-beginning
 ```
+
+## Submit job with EMR on EKS
+
+## OPTIONAL: Submit EMR step
+
+
 
 [*^ back to top*](#Table-of-Contents)
 ## Useful commands

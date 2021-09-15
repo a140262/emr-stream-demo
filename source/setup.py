@@ -20,10 +20,10 @@ except IOError as e:
     long_description = ''
 
 setuptools.setup(
-    name="sql-based-etl",
+    name="emr-stream-demo",
     version="1.0.0",
 
-    description="A CDK Python app for SQL-based ETL",
+    description="A CDK Python app for Spark Structured Streaming ETL",
     long_description=long_description,
     long_description_content_type="text/markdown",
     

@@ -31,9 +31,7 @@ class S3AppCodeConst(core.Construct):
         self._artifact_bucket=s3.Bucket(self, id, 
             block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
             encryption=s3.BucketEncryption.KMS_MANAGED,
-            removal_policy=core.RemovalPolicy.RETAIN,
-            access_control = s3.BucketAccessControl.LOG_DELIVERY_WRITE,
-            versioned=False
+            removal_policy= core.RemovalPolicy.DESTROY
         )
 
         proj_dir=os.path.split(os.environ['VIRTUAL_ENV'])[0]
