@@ -6,9 +6,9 @@ It include sample data, stream producer simulator and a consumer example that ca
 #### Table of Contents
 * [Prerequisites](#Prerequisites)
 * [Deploy Infrastructure](#Deploy-infrastructure)
-  * [CFN Deploy](#Deploy-CFN)
+  * [CFN Deployment](#CloudFormation-Deployment)
   * [Customization](#Customization)
-  * [CDK Deploy](#Deploy-via-CDK)
+  * [CDK Deployment](#CDK-Deployment)
   * [Troubleshooting](#Troubleshooting)
 * [Post Deployment](#Post-Deployment)
   * [Setup Kafka client](#Setup-kafka-client)
@@ -25,15 +25,6 @@ It include sample data, stream producer simulator and a consumer example that ca
 * [Security](#Security)
 * [License](#License)
 
-## Prerequisites 
-1. Python 3.6 or later. Download Python [here](https://www.python.org/downloads/).
-2. AWS CLI version 1.
-  Windows: [MSI installer](https://docs.aws.amazon.com/cli/latest/userguide/install-windows.html#install-msi-on-windows)
-  Linux, macOS or Unix: [Bundled installer](https://docs.aws.amazon.com/cli/latest/userguide/install-macos.html#install-macosos-bundled)
-3. The AWS CLI can communicate with services in your deployment account. Otherwise, run the following script to setup your AWS account access from a command line tool.
-```bash
-aws configure
-```
 ## Deploy Infrastructure
 
 Download the project:
@@ -49,19 +40,18 @@ Two ways to deploy:
 2. [AWS Cloud Development Kit (AWS CDK)](https://docs.aws.amazon.com/cdk/latest/guide/home.html).
 
 [*^ back to top*](#Table-of-Contents)
-### Deploy CFN
-
+### CloudFormation Deployment
 
   |   Region  |   Launch Template |
   |  ---------------------------   |   -----------------------  |
   |  ---------------------------   |   -----------------------  |
-  **Choose Your Region**| [![Deploy to AWS](source/images/00-deploy-to-aws.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/quickcreate?stackName=SparkOnEKS&templateURL=https://solutions-reference.s3.amazonaws.com/sql-based-etl-with-apache-spark-on-amazon-eks/v1.0.0/sql-based-etl-with-apache-spark-on-amazon-eks.template) 
+  **Choose Your Region**| [![Deploy to AWS](source/images/00-deploy-to-aws.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/quickcreate?stackName=SparkOnEKS&templateURL=https://testtestmelody.s3.amazonaws.com/emr-stream-demo/v1.0.0/emr-on-eks.template) 
 
 * Deploy with default (recommended). The default region is **us-east-1**. 
 To launch the solution in a different AWS Region, use the Region selector in the console navigation bar. 
 
 ### Customization
-You can customize the solution, such as remove a Jupyter timeout setting, then generate the CFN in your region: 
+You can customize the solution, such as remove the nested stack for EMR cluster setup, then generate the CFN in your region: 
 ```bash
 export BUCKET_NAME_PREFIX=<my-bucket-name> # bucket where customized code will reside
 export AWS_REGION=<your-region>
@@ -81,28 +71,22 @@ echo -e "\nIn web browser, paste the URL to launch the template: https://console
 ```
 
 [*^ back to top*](#Table-of-Contents)
-### Deploy via CDK
+### CDK Deployment
 
-CDK deployment requires Node.js (>= 10.3.0) and AWS CDK Toolkit. To install Node.js visit the [node.js](https://nodejs.org/en/) website. To install CDK toolkit, follow the [instruction](https://cdkworkshop.com/15-prerequisites/500-toolkit.html). If it's the first time to deploy an AWS CDK app into an AWS account, also you need to install a [“bootstrap stack”](https://cdkworkshop.com/20-typescript/20-create-project/500-deploy.html) to your CloudFormation.
+#### Prerequisites 
+1. [Python 3.6 or later](https://www.python.org/downloads/).
+2. [Node.js 10.3.0 or later](https://nodejs.org/en/)
+3. [AWS CLI for windows](https://docs.aws.amazon.com/cli/latest/userguide/install-windows.html#install-msi-on-windows) or [for the rest of OS](https://docs.aws.amazon.com/cli/latest/userguide/install-macos.html#install-macosos-bundled). Configure the CLI by `aws configure`.
+4. [CDK toolkit](https://cdkworkshop.com/15-prerequisites/500-toolkit.html)
+5. [One-off CDK bootstrap](https://cdkworkshop.com/20-typescript/20-create-project/500-deploy.html) for the first time deployment.
 
 See the `troubleshooting` section, if you have a problem to deploy the application via CDK.
- 
-Two reasons to deploy the solution by AWS CDK:
-1. CDK provides local debug feature and fail fast.
-2. Convenient to customize the solution with a quicker test response. For example remove a nested stack CloudFront and enable TLS in ALB.
- 
-Limitation:
-The CDK deployment doesn't support pre or post-deployment steps, such as zip up a lambda function.
-
+#### Deploy CDK app
 ```bash
 python3 -m venv .env
 ```
-If you are in a Windows platform, you would activate the virtualenv like this:
- 
-```
-% .env\Scripts\activate.bat
-```
-After the virtualenv is created, you can use the followings to activate your virtualenv and deploy.
+For Windows,activate the virtualenv like this: `% .env\Scripts\activate.bat`.
+For others OS,activate and deploy:
 ```bash
 source .env/bin/activate
 pip install -e source
@@ -150,18 +134,9 @@ kafka_2.12-2.2.1/bin/kafka-console-consumer.sh --bootstrap-server ${MSK_SERVER} 
 
 [*^ back to top*](#Table-of-Contents)
 ## Clean up
-Run the clean-up script with your CloudFormation stack name. The default name is SparkOnEKS. If you see the error "(ResourceInUse) when calling the DeleteTargetGroup operation", simply run the script again.
+Run the clean-up script with your CloudFormation stack name EMROnEKS. If you see the error "(ResourceInUse) when calling the DeleteTargetGroup operation", simply run the script again.
 ```bash
 cd sql-based-etl-with-apache-spark-on-amazon-eks
-./deployment/delete_all.sh <OPTIONAL:stack_name>
+./deployment/delete_all.sh
 ```
 Go to the [CloudFormation console](https://console.aws.amazon.com/cloudformation/home?region=us-east-1), manually delete the remaining resources if needed.
-
-[*^ back to top*](#Table-of-Contents)
-## Security
-
-See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.
-
-## License
-
-This project is licensed under the Apache-2.0 License. See the [LICENSE](LICENSE.txt) file.
