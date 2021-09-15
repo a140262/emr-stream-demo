@@ -18,7 +18,7 @@ const fs = require('fs');
 // Paths
 var currentPath = process.cwd();
 const global_s3_assets = currentPath+'/../deployment/global-s3-assets';
-const solution_name='sql-based-etl-with-apache-spark-on-amazon-eks';
+const solution_name='StreamOnEKS';
 
 function setParameter(template) {
     const parameters = (template.Parameters) ? template.Parameters : {};

@@ -21,7 +21,7 @@ app = App()
 cluster_name = app.node.try_get_context('cluster_name')
 
 # main stacks
-eks_stack = SparkOnEksStack(app, 'emr-on-eks', cluster_name)
+eks_stack = SparkOnEksStack(app, 'StreamOnEKS', cluster_name)
 emr_ec2_stack = EMREC2Stack(eks_stack, 'emr-on-ec2', eks_stack.eksvpc, eks_stack.code_bucket,cluster_name)
 msk_stack = MSKStack(eks_stack,'kafka',eks_stack.eksvpc,cluster_name)
 

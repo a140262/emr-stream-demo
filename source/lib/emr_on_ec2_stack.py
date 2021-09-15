@@ -64,7 +64,7 @@ class EMREC2Stack(core.NestedStack):
         # emr job flow profile
         emr_job_flow_profile = iam.CfnInstanceProfile(self,"EMRJobflowProfile",
             roles=[emr_job_flow_role.role_name],
-            instance_profile_name="emrJobFlowProfile_",
+            instance_profile_name="emrJobFlowProfile",
         )
 
         ####################################
@@ -72,7 +72,7 @@ class EMREC2Stack(core.NestedStack):
         #######  Create EMR Cluster  #######
         #######                      #######
         ####################################
-        emr_cluster=CfnCluster(self,"emr_ec2_cluster",
+        CfnCluster(self,"emr_ec2_cluster",
             name=cluster_name,
             applications=[CfnCluster.ApplicationProperty(name="Spark")],
             service_role=svc_role.role_name,

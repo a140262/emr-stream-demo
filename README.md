@@ -1,15 +1,16 @@
 # Spark Structured Streaming Demo with MSK and EMR
 
-This is a project developed with Python [CDK](https://docs.aws.amazon.com/cdk/latest/guide/home.html).
-It include sample data, stream producer simulator and a consumer example that can be run with both options of EMR on EC2 and EMR on EKS. 
+This is a project developed in Python [CDK](https://docs.aws.amazon.com/cdk/latest/guide/home.html).
+It include sample data, Kafka producer simulator and a consumer example that can be run with EMR on EC2 or EMR on EKS. 
 
 #### Table of Contents
-* [Prerequisites](#Prerequisites)
 * [Deploy Infrastructure](#Deploy-infrastructure)
   * [CFN Deployment](#CloudFormation-Deployment)
   * [Customization](#Customization)
   * [CDK Deployment](#CDK-Deployment)
-  * [Troubleshooting](#Troubleshooting)
+    * [Prerequisites](#Prerequisites)
+    * [Deploy](#Deploy-CDK-app)
+    * [Troubleshooting](#Troubleshooting)
 * [Post Deployment](#Post-Deployment)
 * [Submit job with EMR on EKS](#Submit-job-with-EMR-on-EKS)
 * [OPTIONAL:Submit step to EMR](#OPTIONAL-Submit-emr-job)
@@ -36,7 +37,7 @@ Two ways to deploy:
   |   Region  |   Launch Template |
   |  ---------------------------   |   -----------------------  |
   |  ---------------------------   |   -----------------------  |
-  **Choose Your Region**| [![Deploy to AWS](source/images/00-deploy-to-aws.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/quickcreate?stackName=SparkOnEKS&templateURL=https://testtestmelody.s3.amazonaws.com/emr-stream-demo/v1.0.0/emr-on-eks.template) 
+  **us-east-1**| [![Deploy to AWS](source/app_resources/00-deploy-to-aws.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/quickcreate?stackName=StreamOnEKS&templateURL=https://blogpost-sparkoneks-us-east-1.s3.amazonaws.com/emr-stream-demo/v1.0.0/StreamOnEKS.template) 
 
 * Deploy with default (recommended). The default region is **us-east-1**. 
 To launch the solution in a different AWS Region, use the Region selector in the console navigation bar. 
@@ -87,7 +88,7 @@ cdk deploy
 ```
 
 [*^ back to top*](#Table-of-Contents)
-## Troubleshooting
+#### Troubleshooting
 
 1. If you see the issue `[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1123)`, most likely it means no default certificate authority for your Python installation on OSX. Refer to the [answer](https://stackoverflow.com/questions/52805115/0nd) installing `Install Certificates.command` should fix your local environment. Otherwise, use [Cloud9](https://aws.amazon.com/cloud9/details/) to deploy the CDK instead.
 
@@ -133,7 +134,7 @@ kafka_2.12-2.2.1/bin/kafka-console-consumer.sh --bootstrap-server ${MSK_SERVER} 
 ## Clean up
 Run the clean-up script with your CloudFormation stack name EMROnEKS. If you see the error "(ResourceInUse) when calling the DeleteTargetGroup operation", simply run the script again.
 ```bash
-cd sql-based-etl-with-apache-spark-on-amazon-eks
+cd emr-stream-demo
 ./deployment/delete_all.sh
 ```
 Go to the [CloudFormation console](https://console.aws.amazon.com/cloudformation/home?region=us-east-1), manually delete the remaining resources if needed.

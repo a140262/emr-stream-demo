@@ -27,7 +27,7 @@
 #  - version-code: version of the package
 
 # Important: CDK global version number
-cdk_version===1.96.0
+cdk_version===1.122.0
 
 # Check to see if the required parameters have been provided:
 if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ]; then
@@ -77,36 +77,10 @@ source .env/bin/activate
 pip3 install --upgrade pip -q $source_dir
 
 echo "------------------------------------------------------------------------------"
-echo "[Packing] solution_helper lambda function"
-echo "------------------------------------------------------------------------------"
-
-echo "cd $source_dir/lib/solution_helper"
-cd $source_dir/lib/solution_helper
-echo "pip install -r requirements.txt --target ../package"
-pip install -r requirements.txt --target ../package
-cd $source_dir/lib/package || exit 1
-echo "zip -q -r9 $app_code_dir/solution_helper.zip ."
-zip -q -r9 $app_code_dir/solution_helper.zip .
-echo "cd $source_dir/lib/solution_helper" || exit 1
-cd $source_dir/lib/solution_helper
-echo "zip -g -r $app_code_dir/solution_helper.zip lambda_function.py"
-zip -g -r $app_code_dir/solution_helper.zip lambda_function.py
-echo "rm -rf $source_dir/lib/package"
-rm -rf $source_dir/lib/package
-
-echo "------------------------------------------------------------------------------"
-echo "[Packing] ecr image build"
-echo "------------------------------------------------------------------------------"
-
-echo "cd $source_dir/lib/ecr_build"
-cd $source_dir/lib/ecr_build
-echo "zip -q -r9 $app_code_dir/ecr_build_src.zip ."
-zip -q -r9 $app_code_dir/ecr_build_src.zip .
-cd $source_dir
-
-echo "------------------------------------------------------------------------------"
 echo "[Synth] CDK Project"
 echo "------------------------------------------------------------------------------"
+
+cd $source_dir
 
 # # Install the global aws-cdk package
 echo "npm install -g aws-cdk@$cdk_version"
@@ -139,7 +113,7 @@ done
 
 # Run the helper to clean-up the templates and remove unnecessary CDK elements
 echo "Run the helper to clean-up the templates and remove unnecessary CDK elements"
-echo "node $template_dir/cdk-solution-helper/index"
+echo "node $template_dir/deployment/cdk-solution-helper/index"
 node $template_dir/deployment/cdk-solution-helper/index
 if [ "$?" = "1" ]; then
 	echo "(cdk-solution-helper) ERROR: there is likely output above." 1>&2
