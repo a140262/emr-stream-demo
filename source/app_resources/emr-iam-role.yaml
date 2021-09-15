@@ -18,11 +18,10 @@
     - arn:aws:s3:::{{codeBucket}}/*
   - Effect: Allow
     Action:
-    - kms:Decrypt
     - kms:Encrypt
+    - kms:Decrypt
     - kms:GenerateDataKey*
-    - es:ESHttp*
-    - es:DescribeElasticsearchDomain
+    - kms:DescribeKey
     Resource:
       - '*'  
   - Effect: Allow
