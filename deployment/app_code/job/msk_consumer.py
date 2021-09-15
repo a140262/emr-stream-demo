@@ -17,21 +17,6 @@ sdfRides = spark \
   .option("auto.offset.reset", "latest") \
   .load() \
   .selectExpr("decode(CAST(value AS STRING),'utf-8') as value") 
-
-# sdfFares = spark \
-#   .readStream \
-#   .format("kafka") \
-#   .option("kafka.bootstrap.servers", "b-1.emr-eks-msk.wz7wsg.c4.kafka.ap-southeast-2.amazonaws.com:9092") \
-#   .option("subscribe", "taxifares") \
-#   .option("startingOffsets", "latest") \
-#   .load() \
-#   .selectExpr("decode(CAST(value AS STRING),'utf-8') as value")
-
-# taxiFaresSchema = StructType([ \
-#   StructField("rideId", LongType()), StructField("taxiId", LongType()), \
-#   StructField("driverId", LongType()), StructField("startTime", TimestampType()), \
-#   StructField("paymentType", StringType()), StructField("tip", FloatType()), \
-#   StructField("tolls", FloatType()), StructField("totalFare", FloatType())])
     
 taxiRidesSchema = StructType([ \
   StructField("rideId", LongType()), StructField("isStart", StringType()), \
@@ -43,8 +28,7 @@ taxiRidesSchema = StructType([ \
 
 def parse_data_from_kafka_message(sdf, schema):
   assert sdf.isStreaming == True, "DataFrame doesn't receive streaming data"
-  col = split(sdf['value'], ',') #split attributes to nested array in one Column
-  #now expand col to multiple top-level columns
+  col = split(sdf['value'], ',') 
   for idx, field in enumerate(schema): 
       sdf = sdf.withColumn(field.name, col.getItem(idx).cast(field.dataType)) 
       if field.name=="timestamp":
@@ -60,7 +44,7 @@ query = sdfRides.withWatermark("timestamp", "10 seconds") \
 # query.writeStream \
 #     .outputMode("append") \
 #     .format("console") \
-#     .option("checkpointLocation", "s3://testtestmelody/stream/checkpoint/consumer_taxi2") \
+#     .option("checkpointLocation", "s3://test/stream/checkpoint/consumer_taxi2") \
 #     .option("truncate", False) \
 #     .start() \
 #     .awaitTermination()

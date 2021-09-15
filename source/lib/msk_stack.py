@@ -45,5 +45,5 @@ class MSKStack(core.NestedStack):
     msk.connections.allow_from(emr_connect, ec2.Port.all_tcp)
 
     core.CfnOutput(self, "Kafka_client_URL", value=c9env.ide_url)
-    core.CfnOutput(self, "BootstrapBrokers", value=msk.bootstrap_brokers)
+    core.CfnOutput(self, "MSKBootstrap", value=msk.bootstrap_brokers)
     core.CfnOutput(self, "ZookeeperConnection", value=msk.zookeeper_connection_string)

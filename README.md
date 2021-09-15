@@ -57,20 +57,15 @@ Two ways to deploy:
   |  ---------------------------   |   -----------------------  |
   **Choose Your Region**| [![Deploy to AWS](source/images/00-deploy-to-aws.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/quickcreate?stackName=SparkOnEKS&templateURL=https://solutions-reference.s3.amazonaws.com/sql-based-etl-with-apache-spark-on-amazon-eks/v1.0.0/sql-based-etl-with-apache-spark-on-amazon-eks.template) 
 
-* Option1: Deploy with default (recommended). The default region is **us-east-1**. 
+* Deploy with default (recommended). The default region is **us-east-1**. 
 To launch the solution in a different AWS Region, use the Region selector in the console navigation bar. 
-
-* Option2: Fill in the parameter `jhubuser` if you want to setup a customized username for Jupyter login. 
-
-* Option3: To ETL your own data, input the parameter `datalakebucket` by your S3 bucket. 
-`NOTE: the S3 bucket must be in the same region as the deployment region.`
 
 ### Customization
 You can customize the solution, such as remove a Jupyter timeout setting, then generate the CFN in your region: 
 ```bash
 export BUCKET_NAME_PREFIX=<my-bucket-name> # bucket where customized code will reside
 export AWS_REGION=<your-region>
-export SOLUTION_NAME=sql-based-etl
+export SOLUTION_NAME=emr-stream-demo
 export VERSION=v1.0.0 # version number for the customized code
 
 ./deployment/build-s3-dist.sh $BUCKET_NAME_PREFIX $SOLUTION_NAME $VERSION
@@ -107,14 +102,11 @@ If you are in a Windows platform, you would activate the virtualenv like this:
 ```
 % .env\Scripts\activate.bat
 ```
-After the virtualenv is created, you can use the followings to activate your virtualenv and install the required dependencies.
+After the virtualenv is created, you can use the followings to activate your virtualenv and deploy.
 ```bash
 source .env/bin/activate
 pip install -e source
-```
- 
-* Option1: Deploy with default (recommended)
-```bash
+
 cd source
 cdk deploy
 ```
@@ -129,20 +121,23 @@ cdk deploy
 [*^ back to top*](#Table-of-Contents)
 ## Post-deployment
 
-1. Go to a Cloud9 console, launch the pre-build IDE environment called "Kafka Client"
-2. Run the script to setup Kafka Client on Cloud9 IDE.
+1. Go to "Kafka Client" IDE in Cloud9 console, configure environment:
 ```bash
-curl https://${S3BUCKET}.s3.${AWS_REGION}.amazonaws.com/app_code/post-deployment.sh | bash
+S3BUCKET=$(aws cloudformation describe-stacks --stack-name StreamOnEKS --query "Stacks[0].Outputs[?OutputKey=='CODEBUCKET'].OutputValue" --output text)
+curl https://${S3BUCKET}.s3.amazonaws.com/app_code/post-deployment.sh | bash
 ```
-3. Simulate Kafka ProducerOpen a new termnial window in Cloud9, send sample data to MSK:
+3. Launching a new termnial window in Cloud9, send data to MSK:
 ```bash
 curl -s https://${S3BUCKET}.s3.${AWS_REGION}.amazonaws.com/app_code/data/nycTaxiRides.gz | zcat | split -l 10000 --filter="kafka_2.12-2.2.1/bin/kafka-console-producer.sh --broker-list ${MSK_SERVER} --topic taxirides; sleep 0.2" > /dev/null
 ```
-4. Target MSK Topic consumer
+4. Launching the 3rd termnial window and monitor the source MSK queue:
+```bash
+kafka_2.12-2.2.1/bin/kafka-console-consumer.sh --bootstrap-server ${MSK_SERVER} --topic taxirides --from-beginning
+```
+5. Launching the 4th termnial window and monitor the target MSK queue:
 ```bash
 kafka_2.12-2.2.1/bin/kafka-console-consumer.sh --bootstrap-server ${MSK_SERVER} --topic taxirides_output --from-beginning
 ```
-
 
 [*^ back to top*](#Table-of-Contents)
 ## Useful commands
