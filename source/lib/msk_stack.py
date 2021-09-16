@@ -13,6 +13,7 @@
 
 from aws_cdk import (
     core, 
+    aws_iam as iam,
     aws_cloud9 as cloud9,
     aws_ec2 as ec2,
     aws_msk as msk
@@ -24,12 +25,15 @@ class MSKStack(core.NestedStack):
         super().__init__(scope, id, **kwargs)
 
         # launch Cloud9 as Kafka client
-        self._c9env = cloud9.Ec2Environment(self, "KafkaClientEnv", 
+        self._c9env = cloud9.CfnEnvironmentEC2(self, "KafkaClientEnv", 
             vpc=eksvpc,
             ec2_environment_name= cluster_name+"_client",
-            instance_type=ec2.InstanceType('m5.large'),
-            subnet_selection=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PUBLIC),
+            instance_type=ec2.InstanceType('t3.medium'),
+            subnet_id=eksvpc.public_subnets[0].subnet_id,
+            owner_arn=f"{iam.AccountRootPrincipal().arn}",
+            automatic_stop_time_minutes=60
         )
+        self._c9env.apply_removal_policy(core.RemovalPolicy.DESTROY)
 
         # # enable both TLS & Plain text
         # transit_encryption = CfnCluster.EncryptionInTransitProperty(
@@ -74,7 +78,6 @@ class MSKStack(core.NestedStack):
                 client_broker=msk.ClientBrokerEncryption.TLS_PLAINTEXT
             ),
             instance_type=ec2.InstanceType.of(ec2.InstanceClass.BURSTABLE3, ec2.InstanceSize.SMALL),
-            number_of_broker_nodes=2,
             removal_policy=core.RemovalPolicy.DESTROY,
             security_groups=[sg_msk],
             vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PUBLIC,one_per_az=True)
@@ -86,5 +89,9 @@ class MSKStack(core.NestedStack):
         # self._msk_cluster.connections.allow_from(emr_master_sg, ec2.Port.all_tcp)
         # self._msk_cluster.connections.allow_from(emr_slave_sg,ec2.Port.all_tcp)
 
-        core.CfnOutput(self, "Kafka_client_URL", value=self._c9env.ide_url)
+        # core.CfnOutput(self, "MSK_CLIENT_URL", value=self._c9env.ide_url)
+        core.CfnOutput(self,"MSK_CLIENT_URL",
+            value=f"https://{core.Aws.REGION}.console.aws.amazon.com/cloud9/home/environments/{self._c9env.ref}?permissions=owner",
+            description="Cloud9 Url, Use this URL to access your command line environment in a browser",
+        )
         core.CfnOutput(self, "MSK_BROKER", value=self._msk_cluster.bootstrap_brokers)

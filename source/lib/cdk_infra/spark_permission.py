@@ -16,21 +16,21 @@ from aws_cdk import (
     aws_iam as iam,
     aws_emrcontainers as emrc
 )
-from aws_cdk.aws_eks import ICluster, KubernetesManifest
+
+from aws_cdk.aws_eks import ICluster, KubernetesManifest, AwsAuth
 from lib.util.manifest_reader import load_yaml_replace_var_local
 import os
 
-class SparkOnEksSAConst(core.Construct):
+class SparkOnEksConst(core.Construct):
 
     def __init__(self,scope: core.Construct, id: str, 
         eks_cluster: ICluster, 
         code_bucket: str, 
-        clust_oidc_issuer: str,
         **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
-        source_dir=os.path.split(os.environ['VIRTUAL_ENV'])[0]+'/source'        
-
+        source_dir=os.path.split(os.environ['VIRTUAL_ENV'])[0]+'/source'  
+   
 # //****************************************************************************************//
 # //************************** SETUP PERMISSION FOR OSS SPARK JOBS *************************//
 # //******* create k8s namespace, service account, and IAM role for service account ********//
@@ -124,6 +124,15 @@ class SparkOnEksSAConst(core.Construct):
         )
         _emr_fg_rb.node.add_dependency(emr_serverless_ns)
 
+
+        # map EMR user to IAM role
+        _emrsvcrole = iam.Role.from_role_arn(self, "EmrSvcRole", 
+            role_arn=f"arn:aws:iam::{core.Aws.ACCOUNT_ID}:role/AWSServiceRoleForAmazonEMRContainers", 
+            mutable=False
+        )
+        _eks_awsauth = AwsAuth(self,"eksAuth",cluster=eks_cluster)
+        _eks_awsauth.add_role_mapping(_emrsvcrole, groups=[], username="emr-containers")
+
         # Create EMR on EKS job executor role
         #######################################
         #######                         #######
@@ -131,30 +140,34 @@ class SparkOnEksSAConst(core.Construct):
         #######                         #######
         #######################################
         _emr_exec_role = iam.Role(self, "EMRJobExecRole", assumed_by=iam.ServicePrincipal("eks.amazonaws.com"))
+        _emr_exec_role.node.add_dependency(_eks_awsauth)
         
         # trust policy
+        _eks_oidc_provider=eks_cluster.open_id_connect_provider 
+        _eks_oidc_issuer=_eks_oidc_provider.open_id_connect_provider_issuer 
+         
         sub_str_like = core.CfnJson(self, "ConditionJsonIssuer",
             value={
-                f"{clust_oidc_issuer}:sub": f"system:serviceaccount:{_emr_01_name}:emr-containers-sa-*-*-{core.Aws.ACCOUNT_ID}-*"
+                f"{_eks_oidc_issuer}:sub": f"system:serviceaccount:{_emr_01_name}:emr-containers-sa-*-*-{core.Aws.ACCOUNT_ID}-*"
             }
         )
         _emr_exec_role.assume_role_policy.add_statements(
             iam.PolicyStatement(
                 effect=iam.Effect.ALLOW,
                 actions=["sts:AssumeRoleWithWebIdentity"],
-                principals=[iam.OpenIdConnectPrincipal(eks_cluster.open_id_connect_provider, conditions={"StringLike": sub_str_like})])
+                principals=[iam.OpenIdConnectPrincipal(_eks_oidc_provider, conditions={"StringLike": sub_str_like})])
         )
 
         aud_str_like = core.CfnJson(self,"ConditionJsonAudEMR",
             value={
-                f"{clust_oidc_issuer}:aud": "sts.amazon.com"
+                f"{_eks_oidc_issuer}:aud": "sts.amazon.com"
             }
         )
         _emr_exec_role.assume_role_policy.add_statements(
             iam.PolicyStatement(
                 effect=iam.Effect.ALLOW,
                 actions=["sts:AssumeRoleWithWebIdentity"],
-                principals=[iam.OpenIdConnectPrincipal(eks_cluster.open_id_connect_provider, conditions={"StringEquals": aud_str_like})]
+                principals=[iam.OpenIdConnectPrincipal(_eks_oidc_provider, conditions={"StringEquals": aud_str_like})]
             )
         )
         # custom policy      
@@ -166,7 +179,6 @@ class SparkOnEksSAConst(core.Construct):
         for statmnt in _emr_iam:
            _emr_exec_role.add_to_policy(iam.PolicyStatement.from_json(statmnt))
 
-        core.Tags.of(_emr_exec_role).add(key=f"eks/{eks_cluster}/type", value="emr-eks-exec-role")
 
 
         ############################################
@@ -177,27 +189,26 @@ class SparkOnEksSAConst(core.Construct):
         emr_vc = emrc.CfnVirtualCluster(self,"EMRCluster",
             container_provider=emrc.CfnVirtualCluster.ContainerProviderProperty(
                 id=eks_cluster.cluster_name,
-                info=emrc.CfnVirtualCluster.ContainerInfoProperty(
-                    eks_info=emrc.CfnVirtualCluster.EksInfoProperty(namespace=_emr_01_name)),
+                info=emrc.CfnVirtualCluster.ContainerInfoProperty(eks_info=emrc.CfnVirtualCluster.EksInfoProperty(namespace=_emr_01_name)),
                 type="EKS"
             ),
-            name="EMRCluster"
+            name="EMROnEKS"
         )
         emr_vc.node.add_dependency(_emr_exec_role)
-        emr_vc.node.add_dependency(emr_ns)
+        emr_vc.node.add_dependency(_emr_rb)
 
         emr_vc_fg = emrc.CfnVirtualCluster(self,"EMRServerlessCluster",
             container_provider=emrc.CfnVirtualCluster.ContainerProviderProperty(
                 id=eks_cluster.cluster_name,
-                info=emrc.CfnVirtualCluster.ContainerInfoProperty(
-                    eks_info=emrc.CfnVirtualCluster.EksInfoProperty(namespace=_emr_02_name)),
+                info=emrc.CfnVirtualCluster.ContainerInfoProperty(eks_info=emrc.CfnVirtualCluster.EksInfoProperty(namespace=_emr_02_name)),
                 type="EKS"
             ),
-            name="EMRClusterFG"
+            name="EMROnEKSFargate"
         )
         emr_vc_fg.node.add_dependency(_emr_exec_role) 
-        emr_vc_fg.node.add_dependency(emr_serverless_ns) 
+        emr_vc_fg.node.add_dependency(_emr_fg_rb) 
 
-        core.CfnOutput(self, "VirtualClusterId",value=emr_vc.attr_id)
-        core.CfnOutput(self, "FargateVirtualClusterId",value=emr_vc_fg.attr_id)
-        core.CfnOutput(self, "EMREKSJobRole", value=_emr_exec_role.role_arn)
+   
+        # core.CfnOutput(self, "VirtualClusterId",value=emr_vc.attr_id)
+        # core.CfnOutput(self, "FargateVirtualClusterId",value=emr_vc_fg.attr_id)
+        # core.CfnOutput(self, "EMREKSJobRole", value=_emr_exec_role.role_arn)

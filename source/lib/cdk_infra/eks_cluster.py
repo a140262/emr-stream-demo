@@ -24,9 +24,9 @@ class EksConst(core.Construct):
     def my_cluster(self):
         return self._my_cluster
 
-    @property
-    def oidc_issuer(self):
-        return self._my_cluster.cluster_open_id_connect_issuer       
+    # @property
+    # def oidc_issuer(self):
+    #     return self._my_cluster.cluster_open_id_connect_issuer       
 
     def __init__(self, scope: core.Construct, id:str, eksname: str, eksvpc: ec2.IVpc, noderole: IRole, eks_adminrole: IRole, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)

@@ -22,12 +22,12 @@ cluster_name = app.node.try_get_context('cluster_name')
 
 # main stacks
 eks_stack = SparkOnEksStack(app, 'StreamOnEKS', cluster_name)
-emr_ec2_stack = EMREC2Stack(eks_stack, 'emr-on-ec2', eks_stack.eksvpc, eks_stack.code_bucket,cluster_name)
-msk_stack = MSKStack(eks_stack,'kafka',eks_stack.eksvpc,cluster_name)
+# emr_ec2_stack = EMREC2Stack(eks_stack, 'emr-on-ec2', eks_stack.eksvpc, eks_stack.code_bucket,cluster_name)
+# msk_stack = MSKStack(eks_stack,'kafka',eks_stack.eksvpc,cluster_name)
 
-Tags.of(eks_stack).add('project', 'emr-on-eks')
-Tags.of(emr_ec2_stack).add('project', 'emr-on-eks')
-Tags.of(msk_stack).add('project', 'emr-on-eks')
+Tags.of(eks_stack).add('project', cluster_name)
+# Tags.of(emr_ec2_stack).add('project', cluster_name)
+# Tags.of(msk_stack).add('project', cluster_name)
 
 # Deployment Output
 CfnOutput(eks_stack,'CODE_BUCKET', value=eks_stack.code_bucket)

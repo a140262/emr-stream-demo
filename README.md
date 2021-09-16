@@ -25,7 +25,7 @@ git clone https://github.com/a140262/emr-stream-demo.git
 cd emr-stream-demo
 ```
 
-This project is set up like a standard Python project. The `source/cdk.json` file tells where the application entry point is. The provisioning takes about 30 minutes to complete. See the `troubleshooting` section if you have any deployment problem. 
+This project is set up like a standard Python project. The `source/cdk.json` file tells where the application entry point is. The provisioning takes about 30 minutes to complete. See the `troubleshooting` section if you have CDK deployment problem. 
 
 Two ways to deploy:
 1. AWS CloudFormation template (CFN) 
@@ -37,10 +37,9 @@ Two ways to deploy:
   |   Region  |   Launch Template |
   |  ---------------------------   |   -----------------------  |
   |  ---------------------------   |   -----------------------  |
-  **us-east-1**| [![Deploy to AWS](source/app_resources/00-deploy-to-aws.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/quickcreate?stackName=StreamOnEKS&templateURL=https://blogpost-sparkoneks-us-east-1.s3.amazonaws.com/emr-stream-demo/v1.0.0/StreamOnEKS.template) 
+  **US East (N. Virginia)**| [![Deploy to AWS](source/app_resources/00-deploy-to-aws.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/quickcreate?stackName=StreamOnEKS&templateURL=https://blogpost-sparkoneks-us-east-1.s3.amazonaws.com/emr-stream-demo/v1.0.0/StreamOnEKS.template) 
 
-* Deploy with default (recommended). The default region is **us-east-1**. 
-To launch the solution in a different AWS Region, use the Region selector in the console navigation bar. 
+* To launch in a different AWS Region, check out the following customization section, or use the CDK deployment option.
 
 ### Customization
 You can customize the solution, such as remove the nested stack for EMR cluster setup, then generate the CFN in your region: 
@@ -59,7 +58,7 @@ aws s3 mb s3://$BUCKET_NAME_PREFIX-$AWS_REGION --region $AWS_REGION
 aws s3 cp ./deployment/global-s3-assets/ s3://$BUCKET_NAME_PREFIX-$AWS_REGION/$SOLUTION_NAME/$VERSION/ --recursive --acl bucket-owner-full-control
 aws s3 cp ./deployment/regional-s3-assets/ s3://$BUCKET_NAME_PREFIX-$AWS_REGION/$SOLUTION_NAME/$VERSION/ --recursive --acl bucket-owner-full-control
 
-echo -e "\nIn web browser, paste the URL to launch the template: https://console.aws.amazon.com/cloudformation/home?region=$AWS_REGION#/stacks/quickcreate?stackName=SparkOnEKS&templateURL=https://$BUCKET_NAME_PREFIX-$AWS_REGION.s3.amazonaws.com/$SOLUTION_NAME/$VERSION/sql-based-etl-with-apache-spark-on-amazon-eks.template\n"
+echo -e "\nIn web browser, paste the URL to launch the template: https://console.aws.amazon.com/cloudformation/home?region=$AWS_REGION#/stacks/quickcreate?stackName=StreamOnEKS&templateURL=https://$BUCKET_NAME_PREFIX-$AWS_REGION.s3.amazonaws.com/$SOLUTION_NAME/$VERSION/StreamOnEKS.template\n"
 ```
 
 [*^ back to top*](#Table-of-Contents)
@@ -77,8 +76,8 @@ See the `troubleshooting` section, if you have a problem to deploy the applicati
 ```bash
 python3 -m venv .env
 ```
-For Windows,activate the virtualenv like this: `% .env\Scripts\activate.bat`.
-For others OS,activate and deploy:
+For Windows, activate the virtualenv by `% .env\Scripts\activate.bat`.
+For other OS, run the followings:
 ```bash
 source .env/bin/activate
 pip install -e source
@@ -86,7 +85,11 @@ pip install -e source
 cd source
 cdk deploy
 ```
-
+To remove the deployment from your account:
+```bash
+cd source
+cdk destroy
+```
 [*^ back to top*](#Table-of-Contents)
 #### Troubleshooting
 
@@ -124,11 +127,10 @@ kafka_2.12-2.2.1/bin/kafka-console-consumer.sh --bootstrap-server ${MSK_SERVER} 
 [*^ back to top*](#Table-of-Contents)
 ## Useful commands
 
- * `kubectl get pod -n spark`                         list running Spark jobs
- * `argo submit source/example/nyctaxi-job-scheduler.yaml`  submit a spark job via Argo
- * `argo list --all-namespaces`                       show all jobs scheduled via Argo
- * `kubectl delete pod --all -n spark`                delete all Spark jobs
- * `kubectl apply -f source/app_resources/spark-template.yaml` create a reusable Spark job template
+ * `kubectl get pod -n emr`               list running Spark jobs
+ * `kubectl delete pod --all -n emr`      delete all Spark jobs
+ * `kubectl logs <pod name> -n emr`       check logs against a pod in the emr namespace
+ * `kubectl get node --label-columns=eks.amazonaws.com/capacityType,topology.kubernetes.io/zone` check EKS compute capacity types and AZ distribution.
 
 [*^ back to top*](#Table-of-Contents)
 ## Clean up
