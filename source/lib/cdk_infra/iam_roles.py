@@ -27,6 +27,10 @@ class IamConst(core.Construct):
     @property
     def admin_role(self):
         return self._clusterAdminRole
+        
+    @property
+    def emr_svc_role(self):
+        return self._emrsvcrole 
 
     def __init__(self,scope: core.Construct, id:str, cluster_name:str, **kwargs,) -> None:
         super().__init__(scope, id, **kwargs)
@@ -61,4 +65,9 @@ class IamConst(core.Construct):
             path='/',
             assumed_by=iam.ServicePrincipal('ec2.amazonaws.com'),
             managed_policies=list(_managed_node_managed_policies),
+        )
+
+        self._emrsvcrole = iam.Role.from_role_arn(self, "EmrSvcRole", 
+            role_arn=f"arn:aws:iam::{core.Aws.ACCOUNT_ID}:role/AWSServiceRoleForAmazonEMRContainers", 
+            mutable=False
         )

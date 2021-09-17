@@ -21,16 +21,25 @@ from aws_cdk import (
 
 class MSKStack(core.NestedStack):
 
-    def __init__(self, scope: core.Construct, id: str, eksvpc: ec2.IVpc, cluster_name:str, **kwargs) -> None:
+    @property
+    def Cloud9URL(self):
+        return self._c9env.ref
+
+    @property
+    def MSKBroker(self):
+        return self._msk_cluster.bootstrap_brokers
+
+
+    def __init__(self, scope: core.Construct, id: str, cluster_name:str, eksvpc: ec2.IVpc, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         # launch Cloud9 as Kafka client
         self._c9env = cloud9.CfnEnvironmentEC2(self, "KafkaClientEnv", 
-            vpc=eksvpc,
-            ec2_environment_name= cluster_name+"_client",
-            instance_type=ec2.InstanceType('t3.medium'),
+            name= cluster_name+"_client",
+            instance_type="t3.small",
+            # connection_type="CONNECT_SSM",
             subnet_id=eksvpc.public_subnets[0].subnet_id,
-            owner_arn=f"{iam.AccountRootPrincipal().arn}",
+            owner_arn=iam.AccountRootPrincipal().arn,
             automatic_stop_time_minutes=60
         )
         self._c9env.apply_removal_policy(core.RemovalPolicy.DESTROY)
@@ -88,10 +97,3 @@ class MSKStack(core.NestedStack):
         # self._msk_cluster.connections.allow_from(eks_connect, ec2.Port.all_tcp)
         # self._msk_cluster.connections.allow_from(emr_master_sg, ec2.Port.all_tcp)
         # self._msk_cluster.connections.allow_from(emr_slave_sg,ec2.Port.all_tcp)
-
-        # core.CfnOutput(self, "MSK_CLIENT_URL", value=self._c9env.ide_url)
-        core.CfnOutput(self,"MSK_CLIENT_URL",
-            value=f"https://{core.Aws.REGION}.console.aws.amazon.com/cloud9/home/environments/{self._c9env.ref}?permissions=owner",
-            description="Cloud9 Url, Use this URL to access your command line environment in a browser",
-        )
-        core.CfnOutput(self, "MSK_BROKER", value=self._msk_cluster.bootstrap_brokers)

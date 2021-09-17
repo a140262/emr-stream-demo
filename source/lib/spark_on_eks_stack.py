@@ -31,10 +31,6 @@ class SparkOnEksStack(core.Stack):
     @property
     def eksvpc(self):
         return self.network_sg.vpc
-
-    # @property
-    # def eks_connection(self):
-    #     return self._eks_connection
         
     def __init__(self, scope: core.Construct, id: str, eksname: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
@@ -42,13 +38,13 @@ class SparkOnEksStack(core.Stack):
         # 1. a new bucket to store application code
         self.app_s3 = S3AppCodeConst(self,'appcode')
 
-        # 2. EKS base infrastructure
-        self.network_sg = NetworkSgConst(self,'network-sg', eksname, self.app_s3.code_bucket)
+        # 2. EKS base infra
+        self.network_sg = NetworkSgConst(self,'network-sg', eksname)
         iam = IamConst(self,'iam_roles', eksname)
-        eks_cluster = EksConst(self,'eks_cluster', eksname, self.network_sg.vpc, iam.managed_node_role, iam.admin_role)
+        eks_cluster = EksConst(self,'eks_cluster', eksname, self.network_sg.vpc, iam.managed_node_role, iam.admin_role, iam.emr_svc_role)
         EksSAConst(self, 'eks_service_account', eks_cluster.my_cluster)
         EksBaseAppConst(self, 'eks_base_app', eks_cluster.my_cluster)
 
         # 3. Setup Spark environment, Register for EMR on EKS
-        SparkOnEksConst(self,'spark_permission',eks_cluster.my_cluster, self.app_s3.code_bucket)
+        SparkOnEksConst(self,'spark_permission',eks_cluster.my_cluster, self.app_s3.code_bucket, eks_cluster.awsAuth)
    

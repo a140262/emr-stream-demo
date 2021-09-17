@@ -22,15 +22,8 @@ from lib.util.manifest_reader import load_yaml_replace_var_local
 import os
 
 class EMREC2Stack(core.NestedStack):
-    # @property
-    # def emr_master_sg(self):
-    #     return self.master_sg
 
-    # @property
-    # def emr_slave_sg(self):
-    #     return self.slave_sg
-
-    def __init__(self, scope: core.Construct, id: str, eksvpc: ec2.IVpc, code_bucket:str, cluster_name:str, **kwargs) -> None:
+    def __init__(self, scope: core.Construct, id: str, cluster_name:str, eksvpc: ec2.IVpc, code_bucket:str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         source_dir=os.path.split(os.environ['VIRTUAL_ENV'])[0]+'/source'
@@ -79,19 +72,18 @@ class EMREC2Stack(core.NestedStack):
             log_uri=f"s3://{code_bucket}/elasticmapreduce/",
             release_label="emr-6.2.0",
             visible_to_all_users=True,
-            # note job_flow_role is an instance profile (not an iam role)
             job_flow_role=emr_job_flow_profile.instance_profile_name,
             tags=[core.CfnTag(key="project", value="emr-stream-demo")],
             instances=CfnCluster.JobFlowInstancesConfigProperty(
                 termination_protected=False,
                 master_instance_group=CfnCluster.InstanceGroupConfigProperty(
                     instance_count=1, 
-                    instance_type="m6g.large", 
+                    instance_type="r6g.xlarge", 
                     market="ON_DEMAND"
                 ),
                 core_instance_group=CfnCluster.InstanceGroupConfigProperty(
                     instance_count=1, 
-                    instance_type="m6g.large", 
+                    instance_type="r6g.xlarge", 
                     market="ON_DEMAND",
                     ebs_configuration=CfnCluster.EbsConfigurationProperty(
                         ebs_block_device_configs=[CfnCluster.EbsBlockDeviceConfigProperty(
@@ -132,6 +124,3 @@ class EMREC2Stack(core.NestedStack):
                 )   
             )
         )
-
-        # self.master_sg=emr_cluster.instances.emr_managed_master_security_group
-        # self.slave_sg=emr_cluster.instances.emr_managed_slave_security_group

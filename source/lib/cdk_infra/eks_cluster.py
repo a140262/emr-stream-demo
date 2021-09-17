@@ -24,11 +24,11 @@ class EksConst(core.Construct):
     def my_cluster(self):
         return self._my_cluster
 
-    # @property
-    # def oidc_issuer(self):
-    #     return self._my_cluster.cluster_open_id_connect_issuer       
+    @property
+    def awsAuth(self):
+        return self._my_cluster.aws_auth       
 
-    def __init__(self, scope: core.Construct, id:str, eksname: str, eksvpc: ec2.IVpc, noderole: IRole, eks_adminrole: IRole, **kwargs) -> None:
+    def __init__(self, scope: core.Construct, id:str, eksname: str, eksvpc: ec2.IVpc, noderole: IRole, eks_adminrole: IRole, emr_svc_role: IRole, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         # 1.Create EKS cluster without node group
@@ -41,6 +41,7 @@ class EksConst(core.Construct):
                 endpoint_access= eks.EndpointAccess.PUBLIC_AND_PRIVATE,
                 default_capacity=0
         )
+
 
         # 2.Add Managed NodeGroup to EKS, compute resource to run Spark jobs
         self._my_cluster.add_nodegroup_capacity('onDemand-mn',
@@ -76,3 +77,6 @@ class EksConst(core.Construct):
             }],
             fargate_profile_name='serverlessETL'
         )
+        
+        # 5. Map EMR user to IAM role
+        self._my_cluster.aws_auth.add_role_mapping(emr_svc_role, groups=[], username="emr-containers")

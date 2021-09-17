@@ -26,6 +26,7 @@ class SparkOnEksConst(core.Construct):
     def __init__(self,scope: core.Construct, id: str, 
         eks_cluster: ICluster, 
         code_bucket: str, 
+        awsAuth: AwsAuth,
         **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
@@ -124,15 +125,6 @@ class SparkOnEksConst(core.Construct):
         )
         _emr_fg_rb.node.add_dependency(emr_serverless_ns)
 
-
-        # map EMR user to IAM role
-        _emrsvcrole = iam.Role.from_role_arn(self, "EmrSvcRole", 
-            role_arn=f"arn:aws:iam::{core.Aws.ACCOUNT_ID}:role/AWSServiceRoleForAmazonEMRContainers", 
-            mutable=False
-        )
-        _eks_awsauth = AwsAuth(self,"eksAuth",cluster=eks_cluster)
-        _eks_awsauth.add_role_mapping(_emrsvcrole, groups=[], username="emr-containers")
-
         # Create EMR on EKS job executor role
         #######################################
         #######                         #######
@@ -140,7 +132,6 @@ class SparkOnEksConst(core.Construct):
         #######                         #######
         #######################################
         _emr_exec_role = iam.Role(self, "EMRJobExecRole", assumed_by=iam.ServicePrincipal("eks.amazonaws.com"))
-        _emr_exec_role.node.add_dependency(_eks_awsauth)
         
         # trust policy
         _eks_oidc_provider=eks_cluster.open_id_connect_provider 
@@ -211,4 +202,4 @@ class SparkOnEksConst(core.Construct):
    
         # core.CfnOutput(self, "VirtualClusterId",value=emr_vc.attr_id)
         # core.CfnOutput(self, "FargateVirtualClusterId",value=emr_vc_fg.attr_id)
-        # core.CfnOutput(self, "EMREKSJobRole", value=_emr_exec_role.role_arn)
+        # core.CfnOutput(self, "EMRJobExecRole", value=_emr_exec_role.role_arn)

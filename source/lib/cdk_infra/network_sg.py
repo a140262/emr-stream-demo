@@ -23,7 +23,7 @@ class NetworkSgConst(core.Construct):
     def vpc(self):
         return self._vpc
 
-    def __init__(self,scope: core.Construct, id:str, eksname:str, codebucket: str, **kwargs) -> None:
+    def __init__(self,scope: core.Construct, id:str, eksname:str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
         
         # //*************************************************//
@@ -32,8 +32,6 @@ class NetworkSgConst(core.Construct):
         # create VPC
         self._vpc = ec2.Vpc(self, 'eksVpc',max_azs=2, nat_gateways=1)
         core.Tags.of(self._vpc).add('Name', eksname + 'EksVpc')
-
-        self._log_bucket=s3.Bucket.from_bucket_name(self,'vpc_logbucket', codebucket)
 
         # VPC endpoint security group
         self._vpc_endpoint_sg = ec2.SecurityGroup(self,'EndpointSg',
