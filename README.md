@@ -3,6 +3,24 @@
 This is a project developed in Python [CDK](https://docs.aws.amazon.com/cdk/latest/guide/home.html).
 It include sample data, Kafka producer simulator and a consumer example that can be run with EMR on EC2 or EMR on EKS. 
 
+The infrastructure deployment includes the following:
+- A new S3 bucket to store sample data and stream job code
+- An EKS cluster in a new VPC across 2 AZs
+    - The Cluster has 2 default managed node groups: the OnDemand nodegroup scales from 1 to 5, SPOT instance nodegroup can scale from 1 to 30. 
+    - It also has a Fargate profile set to use the `emrserverless` namespace
+- Two EMR virtual clusters in the same VPC
+    - The first virtual cluster uses the `emr` namespace on managed node groups
+    - The second virtual cluster uses the `emrserverless` namespace on a Fargate profile
+    - All EMR on EKS configuration is done, including a cluster role bound to an IAM role
+- A MSK Cluster in the same VPC with 2 brokers in total. Kafka version is 2.6.1.
+    - A Cloud9 IDE as the command line environment in the demo. 
+    - Kafka Client tool will be installed on the Cloud9 IDE
+- Optionally, sets up an EMR on EC2 cluster with managed scaling enabled.
+    - The cluster has 1 master and 1 core nodes running on Graviton2 (r6g.xlarge).
+    - The cluster is configured for running one Spark job at a time.
+    - The EMR cluster can scale from 1 to 10 core + task nodes
+
+
 #### Table of Contents
 * [Deploy Infrastructure](#Deploy-infrastructure)
   * [CFN Deployment](#CloudFormation-Deployment)

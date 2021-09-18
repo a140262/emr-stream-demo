@@ -20,7 +20,6 @@ from lib.cdk_infra.eks_base_app import EksBaseAppConst
 from lib.cdk_infra.s3_app_code import S3AppCodeConst
 from lib.cdk_infra.spark_permission import SparkOnEksConst
 from lib.util.manifest_reader import *
-import os
 
 class SparkOnEksStack(core.Stack):
 
@@ -31,6 +30,18 @@ class SparkOnEksStack(core.Stack):
     @property
     def eksvpc(self):
         return self.network_sg.vpc
+
+    @property
+    def EMRVC(self):
+        return self._emr.EMRVC
+
+    @property
+    def EMRFargateVC(self):
+        return self._emr.EMRFargateVC    
+
+    @property
+    def EMRExecRole(self):
+        return self._emr.EMRExecRole    
         
     def __init__(self, scope: core.Construct, id: str, eksname: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
@@ -46,5 +57,5 @@ class SparkOnEksStack(core.Stack):
         EksBaseAppConst(self, 'eks_base_app', eks_cluster.my_cluster)
 
         # 3. Setup Spark environment, Register for EMR on EKS
-        SparkOnEksConst(self,'spark_permission',eks_cluster.my_cluster, self.app_s3.code_bucket, eks_cluster.awsAuth)
+        self._emr = SparkOnEksConst(self,'spark_permission',eks_cluster.my_cluster, self.app_s3.code_bucket, eks_cluster.awsAuth)
    

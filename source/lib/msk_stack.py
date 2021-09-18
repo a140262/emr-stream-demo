@@ -37,18 +37,12 @@ class MSKStack(core.NestedStack):
         self._c9env = cloud9.CfnEnvironmentEC2(self, "KafkaClientEnv", 
             name= cluster_name+"_client",
             instance_type="t3.small",
-            # connection_type="CONNECT_SSM",
             subnet_id=eksvpc.public_subnets[0].subnet_id,
             owner_arn=iam.AccountRootPrincipal().arn,
             automatic_stop_time_minutes=60
         )
         self._c9env.apply_removal_policy(core.RemovalPolicy.DESTROY)
 
-        # # enable both TLS & Plain text
-        # transit_encryption = CfnCluster.EncryptionInTransitProperty(
-        #         client_broker="TLS_PLAINTEXT",
-        #         in_cluster=True
-        #     ) 
         # MSK Cluster Security Group
         sg_msk = ec2.SecurityGroup(self, "msk_sg",
             vpc=eksvpc, allow_all_outbound=True, security_group_name="msk_sg"

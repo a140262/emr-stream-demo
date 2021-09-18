@@ -23,6 +23,18 @@ import os
 
 class SparkOnEksConst(core.Construct):
 
+    @property
+    def EMRVC(self):
+        return self.emr_vc.attr_id
+
+    @property
+    def EMRFargateVC(self):
+        return self.emr_vc_fg.attr_id    
+
+    @property
+    def EMRExecRole(self):
+        return self._emr_exec_role.role_arn  
+
     def __init__(self,scope: core.Construct, id: str, 
         eks_cluster: ICluster, 
         code_bucket: str, 
@@ -131,7 +143,7 @@ class SparkOnEksConst(core.Construct):
         #######   EMR Execution Role    #######
         #######                         #######
         #######################################
-        _emr_exec_role = iam.Role(self, "EMRJobExecRole", assumed_by=iam.ServicePrincipal("eks.amazonaws.com"))
+        self._emr_exec_role = iam.Role(self, "EMRJobExecRole", assumed_by=iam.ServicePrincipal("eks.amazonaws.com"))
         
         # trust policy
         _eks_oidc_provider=eks_cluster.open_id_connect_provider 
@@ -142,7 +154,7 @@ class SparkOnEksConst(core.Construct):
                 f"{_eks_oidc_issuer}:sub": f"system:serviceaccount:{_emr_01_name}:emr-containers-sa-*-*-{core.Aws.ACCOUNT_ID}-*"
             }
         )
-        _emr_exec_role.assume_role_policy.add_statements(
+        self._emr_exec_role.assume_role_policy.add_statements(
             iam.PolicyStatement(
                 effect=iam.Effect.ALLOW,
                 actions=["sts:AssumeRoleWithWebIdentity"],
@@ -154,7 +166,7 @@ class SparkOnEksConst(core.Construct):
                 f"{_eks_oidc_issuer}:aud": "sts.amazon.com"
             }
         )
-        _emr_exec_role.assume_role_policy.add_statements(
+        self._emr_exec_role.assume_role_policy.add_statements(
             iam.PolicyStatement(
                 effect=iam.Effect.ALLOW,
                 actions=["sts:AssumeRoleWithWebIdentity"],
@@ -168,7 +180,7 @@ class SparkOnEksConst(core.Construct):
             }
         )
         for statmnt in _emr_iam:
-           _emr_exec_role.add_to_policy(iam.PolicyStatement.from_json(statmnt))
+           self._emr_exec_role.add_to_policy(iam.PolicyStatement.from_json(statmnt))
 
 
 
@@ -177,7 +189,7 @@ class SparkOnEksConst(core.Construct):
         #######  EMR virtual Cluster Server  #######
         #######                              #######
         ############################################
-        emr_vc = emrc.CfnVirtualCluster(self,"EMRCluster",
+        self.emr_vc = emrc.CfnVirtualCluster(self,"EMRCluster",
             container_provider=emrc.CfnVirtualCluster.ContainerProviderProperty(
                 id=eks_cluster.cluster_name,
                 info=emrc.CfnVirtualCluster.ContainerInfoProperty(eks_info=emrc.CfnVirtualCluster.EksInfoProperty(namespace=_emr_01_name)),
@@ -185,10 +197,10 @@ class SparkOnEksConst(core.Construct):
             ),
             name="EMROnEKS"
         )
-        emr_vc.node.add_dependency(_emr_exec_role)
-        emr_vc.node.add_dependency(_emr_rb)
+        self.emr_vc.node.add_dependency(self._emr_exec_role)
+        self.emr_vc.node.add_dependency(_emr_rb)
 
-        emr_vc_fg = emrc.CfnVirtualCluster(self,"EMRServerlessCluster",
+        self.emr_vc_fg = emrc.CfnVirtualCluster(self,"EMRServerlessCluster",
             container_provider=emrc.CfnVirtualCluster.ContainerProviderProperty(
                 id=eks_cluster.cluster_name,
                 info=emrc.CfnVirtualCluster.ContainerInfoProperty(eks_info=emrc.CfnVirtualCluster.EksInfoProperty(namespace=_emr_02_name)),
@@ -196,10 +208,5 @@ class SparkOnEksConst(core.Construct):
             ),
             name="EMROnEKSFargate"
         )
-        emr_vc_fg.node.add_dependency(_emr_exec_role) 
-        emr_vc_fg.node.add_dependency(_emr_fg_rb) 
-
-   
-        # core.CfnOutput(self, "VirtualClusterId",value=emr_vc.attr_id)
-        # core.CfnOutput(self, "FargateVirtualClusterId",value=emr_vc_fg.attr_id)
-        # core.CfnOutput(self, "EMRJobExecRole", value=_emr_exec_role.role_arn)
+        self.emr_vc_fg.node.add_dependency(self._emr_exec_role) 
+        self.emr_vc_fg.node.add_dependency(_emr_fg_rb) 
